@@ -1,21 +1,23 @@
-from dash import Dash, html, dcc, Input, Output  # pip install dash
-import dash_ag_grid as dag                       # pip install dash-ag-grid
-import dash_bootstrap_components as dbc          # pip install dash-bootstrap-components
-import pandas as pd                              # pip install pandas
-
-import matplotlib                                # pip install matplotlib
+from dash import Dash, html, dcc, Input, Output
+import dash_ag_grid as dag
+import dash_bootstrap_components as dbc
+from flask import Flask, render_template, request
+import pandas as pd
+import numpy as np
+import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
 import folium
-import numpy as np
+import csv
 
 sewage = pd.read_csv('SewageLeaksRefined.csv')
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container([
     #Header
     html.H1("Example Libidos Data Dash", className='mb-2', style={'textAlign':'center'}),
+    html.A("Sewage CSV Update", href='/csv_update'),
     html.A("Sewage Map", href='/sewage_map'),
     html.A("Sewage Grid", href='/sewage_grid'),
     # Dropdown menu
@@ -267,6 +269,23 @@ def grid():
     """Grid overlay of Lobitos sectors and merged sewage leaks counts"""
     return lobitos_grid.get_root().render()
 
+
+@app.server.route("/csv_update", methods=["GET", "POST"])
+def csv_update():
+    if request.method == "POST":
+        name = request.form['Name']
+        lat = request.form['Lat']
+        lon = request.form['Lon']
+        noted = request.form['Noted']
+        resolved = request.form['Resolved']
+        diameter = request.form['Diameter']
+        severity = request.form['Severity']
+        issue_type = request.form['IssueType']
+        with open('sewage_data.csv', mode='a', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow([name, lat, lon, noted, resolved, diameter, severity, issue_type])
+        return f"Your data has been saved to the CSV file."
+    return render_template('csv_update.html')
 
 if __name__ == '__main__':
     app.run_server(debug=False, port=8002)
